@@ -10,14 +10,80 @@ import pandas as pd
 import random
 import datetime
 from datetime import timedelta
+import psycopg2
+from sqlalchemy import create_engine, Table, MetaData, Column, Integer, Float, String
 
+engine = create_engine('postgresql://localhost/bi_casestudy')
+meta = MetaData()
 
-def rand_list(n, nmax, nmin=1):
-    liszt = []
-    for i in range(0, n - 1):
-        r = random.randint(nmin, nmax)
-        liszt.append(r)
-    return liszt
+suppliers = Table('Suppliers', meta,
+                  Column('SupplierID', Integer, primary_key=True),
+                  Column('CompanyName', String),
+                  Column('Address', String),
+                  Column('City', String),
+                  Column('PostalCode', String),
+                  Column('Country', String))
+branches = Table('Branches', meta,
+                 Column('BranchID', Integer, primary_key=True),
+                 Column('RegionID', Integer),
+                 Column('City', String),
+                 Column('PostalCode', String))
+regions = Table('Regions', meta,
+                Column('RegionID', Integer, primary_key=True),
+                Column('Name', String))
+menu_items = Table('MenuItems', meta,
+                   Column('MenuItemID', Integer, primary_key=True),
+                   Column('Name', String),
+                   Column('Category', String),
+                   Column('Price', Float))
+products = Table('Products', meta,
+                 Column('ProductID', Integer, primary_key=True),
+                 Column('ProductName', String),
+                 Column('SupplierId', Integer),
+                 Column('UnitQuantity', Integer),
+                 Column('UnitMeasure', String),
+                 Column('UnitPrice', Float),
+                 Column('UnitsInStock', Integer))
+menu_details = Table('MenuDetails', meta,
+                     Column('ProductID', Integer, primary_key=True),
+                     Column('MenuItemID', Integer),
+                     Column('ProductQuantity', Integer))
+purchases = Table('Purchases', meta,
+                  Column('PurchaseID', Integer, primary_key=True),
+                  Column('Total', Float),
+                  Column('DateOrdered', String),
+                  Column('DateReceived', String),
+                  Column('ProcessTime', Integer))
+purchase_details = Table('PurchaseDetails', meta,
+                         Column('PurchaseID', Integer, primary_key=True),
+                         Column('ProductID', Integer),
+                         Column('SupplierID', Integer),
+                         Column('SupplierID', Integer),
+                         Column('TimeID', Integer),
+                         Column('BranchID', Integer),
+                         Column('UnitQuantity', Integer),
+                         Column('UnitPrice', Float),
+                         Column('UnitTotal', Float))
+sale_details = Table('SaleDetails', meta,
+                     Column('SaleID', Integer, primary_key=True),
+                     Column('MenuItemID', Integer),
+                     Column('MenuItemQuantity', Integer),
+                     Column('Total', Float),
+                     Column('TimeID', Integer))
+sales = Table('Sales', meta,
+              Column('SaleID', Integer, primary_key=True),
+              Column('BranchID', Integer),
+              Column('Total', Float),
+              Column('TimeID', Integer))
+time = Table('Time', meta,
+             Column('TimeID', Integer, primary_key=True),
+             Column('Day', Integer),
+             Column('Month', Integer),
+             Column('Year', Integer),
+             Column('Quarter', Integer),
+             Column('Time', String))
+
+meta.create_all(engine)
 
 
 def date_builder():
@@ -103,7 +169,7 @@ def sale_builder(menuitems, time_table, n=20000):
             from_menu = menu_df.loc[menu_df['MenuItemID'] == str(item_id)]
             item = from_menu.squeeze()
             sale_details_dict = {'SaleID': sale_id, 'MenuItemID': item.MenuItemID, 'MenuItemQuantity': qty}
-            total = item.Price * qty
+            total = round(item.Price, 2) * qty
             sale_total += total
             sale_details_dict['Total'] = total
             sale_details_dict['TimeID'] = time_id_stamp
@@ -125,18 +191,8 @@ def sale_builder(menuitems, time_table, n=20000):
 
 
 def main():
-    """
-    suppliers
-    regions
-    branches
-    menuitems
-    products
-    menu details
-    customer orders (sales)
-    product purchases (purchases)
-    """
 
-    '''supppliers'''
+    '''suppliers'''
     companyName = ['General Goods', 'Sweets and Drinks', 'Atlantic Fish Co', 'Ovation Seafood', 'Variety Seafood',
                    'Seafood Creations', 'Wicked Seafood', 'Seafood Sales', 'Chord Seafood', 'Plus Seafood']
     address = ['Auf dem Bruch 82a', 'Theodor-Gierath-Str. 1, Apt. 981', '03517 Legros Mountain, Suite 808',
@@ -158,8 +214,8 @@ def main():
         supplier_dict = {'SupplierID': Supplier.name, 'CompanyName': Supplier.name, 'Address': Supplier.address,
                          'City': Supplier.city, 'PostalCode': Supplier.postal_code, 'Country': Supplier.country}
         supplier_table = supplier_table.append(supplier_dict, ignore_index=True)
-        # insert into suppliers table
-    print(supplier_table.head())
+    print('Inserting supplier_table into db...')
+    supplier_table.to_sql('Suppliers', con=engine, if_exists='replace')
 
     '''branches'''
     branches_table = pd.DataFrame(columns=['BranchID', 'RegionID', 'City', 'PostalCode'])
@@ -174,10 +230,10 @@ def main():
                 branch_dict = {'BranchID': Branch.id, 'RegionID': Branch.region_id, 'City': Branch.city,
                                'PostalCode': Branch.postal_code}
                 branches_table = branches_table.append(branch_dict, ignore_index=True)
-                # insert into branches table
             else:
                 break
-    print(branches_table.head())
+    print('Inserting branches_table into db...')
+    branches_table.to_sql('Branches', con=engine, if_exists='replace')
 
     '''regions'''
     rs = ['Baden-Württemberg', 'Bavaria', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hesse',
@@ -187,7 +243,8 @@ def main():
     for i in range(1, 15):
         reg_dict = {'RegionID': i, 'Name': rs.pop(0)}
         region_table = region_table.append(reg_dict, ignore_index=True)
-    print(region_table.head())
+    print('Inserting region_table into db...')
+    region_table.to_sql('Regions', con=engine, if_exists='replace')
 
     '''Menu items'''
     menuitem_table = pd.DataFrame(columns=['MenuItemID', 'Name', 'Category', 'Price'])
@@ -207,8 +264,8 @@ def main():
                 menu_dict = {'MenuItemID': MenuItem.id, 'Name': MenuItem.name, 'Category': MenuItem.category,
                              'Price': MenuItem.price}
                 menuitem_table = menuitem_table.append(menu_dict, ignore_index=True)
-    # insert into meunuitems table
-    print(menuitem_table.head())
+    menuitem_table.to_sql('MenuItems', con=engine, if_exists='replace')
+    print('Inserting menuitems_table into db...')
 
     '''products'''
     prod_table = pd.DataFrame(columns=['ProductID', 'ProductName', 'SupplierID', 'UnitQuantity', 'UnitMeasure',
@@ -229,7 +286,8 @@ def main():
                              'UnitMeasure': Product.unit_measure, 'UnitPrice': Product.unit_price,
                              'UnitsInStock': Product.units_stock}
                 prod_table = prod_table.append(prod_dict, ignore_index=True)
-    print(prod_table.head())
+    prod_table.to_sql('Products', con=engine, if_exists='replace')
+    print('Inserting prod_table into db...')
 
     '''menu details'''
     menudetail_table = pd.DataFrame(columns=['ProductID', 'MenuItemID', 'ProductQuantity'])
@@ -243,12 +301,14 @@ def main():
                 menudetail_dict = {'ProductID': MenuDetail.product_id, 'MenuItemID': MenuDetail.menuitem_id,
                                    'ProductQuantity': MenuDetail.product_qty}
                 menudetail_table = menudetail_table.append(menudetail_dict, ignore_index=True)
-    print(menudetail_table.head())
+    menudetail_table.to_sql('MenuDetails', con=engine, if_exists='replace')
+    print('Inserting menudetail_table into db...')
 
     '''purchases & purchase details'''
-    purchases, purchase_details = purchase_builder(prod_table, 10)
-    print(purchases.head())
-    print(purchase_details.head())
+    purchases, purchase_details = purchase_builder(prod_table)
+    purchases.to_sql('Purchases', con=engine, if_exists='replace')
+    purchase_details.to_sql('PurchaseDetails', con=engine, if_exists='replace')
+    print('Inserting purchases, purchase_deails into db...')
 
     '''time'''
     time_table = pd.DataFrame(columns=['TimeID', 'Day', 'Month', 'Year', 'Quarter', 'Time'])
@@ -267,12 +327,13 @@ def main():
                      'Quarter': quarter, 'Time': time}
         time_table = time_table.append(time_dict, ignore_index=True)
 
-
     '''sales'''
-    sales_table, sale_details_table, time_table = sale_builder(menuitem_table, time_table, 200)
-    print(sales_table.head())
-    print(sale_details_table.head())
-    print(time_table.head())
+    sales_table, sale_details_table, time_table = sale_builder(menuitem_table, time_table)
+    sales_table.to_sql('Sales', con=engine, if_exists='replace')
+    sale_details_table.to_sql('SaleDetails', con=engine, if_exists='replace')
+    time_table.to_sql('Time', con=engine, if_exists='replace')
+    print('Inserting sales, sale_details, time tables into db...')
+
 
 if __name__ == '__main__':
     main()
