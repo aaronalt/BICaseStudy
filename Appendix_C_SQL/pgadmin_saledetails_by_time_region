@@ -1,0 +1,10 @@
+SELECT 
+sd."SaleID", s."BranchID", bbr."BranchName", bbr."RegionName" as RegionID, bbr."Subdivision" as Regionname, bbr."RegionID" as subdivision,
+sd."MenuItemID", sd."MenuItemQuantity", ROUND(CAST(sd."Total" as numeric), 2) as menuitemtotal, mi."Name" as menuitem, mi."Category", mi."Price" as itemprice,
+sd."TimeID", ti."Year", ti."Month", ti."Day", ti."Quarter", ti."Time" as ordertime
+FROM public."SaleDetails" as sd
+INNER JOIN public."Time" as ti on sd."TimeID" = ti."TimeID"
+INNER JOIN public."MenuItems" as mi on sd."MenuItemID" = mi."MenuItemID" 
+INNER JOIN public."Sales" as s on sd."SaleID" = CAST(s."SaleID" as bigint)
+INNER JOIN public."BranchesByRegion" as bbr on s."BranchID" = bbr."BranchID"
+ORDER BY sd."SaleID";

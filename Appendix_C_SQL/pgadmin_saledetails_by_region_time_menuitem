@@ -1,0 +1,4 @@
+SELECT 
+sbt."BranchID", sbt."BranchName", sbt."RegionID", sbt."RegionName", 'DE-' || sbt."Subdivision" as subdivision, sbt."SaleID", sbt."TimeID", sbt."MenuItemID", sbt."MenuItemQuantity", sbt."Total", mi."Name" as MenuItemName, mi."Category", mi."Price" as menuprice, sbt."__time" 
+FROM public."SalesRegionTimeFix" as sbt
+INNER JOIN public."MenuItems" as mi on sbt."MenuItemID" = mi."MenuItemID"

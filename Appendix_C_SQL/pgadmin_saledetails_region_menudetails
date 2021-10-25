@@ -1,0 +1,5 @@
+SELECT
+srt."BranchID", srt."BranchName", srt."MenuItemID", srt."MenuItemQuantity", srt."RegionID", srt."RegionName", srt."Subdivision", srt."SaleID", srt."TimeID", srt."Total", srt."__time", mid."Name", mid."Category", mid."Price", mid."ProductID", mid."ProductName", mid."SupplierID", mid."UnitPrice", md."ProductQuantity" 
+FROM public."SalesRegionTimeFix" as srt
+INNER JOIN public."MenuItemsDetailsProducts" as mid on srt."MenuItemID" = mid."MenuItemID"
+INNER JOIN public."MenuDetails" as md on mid."ProductID" = md."ProductID"

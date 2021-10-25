@@ -1,0 +1,5 @@
+SELECT 
+mi."MenuItemID", mi."Name", mi."Category", mi."Price", md."ProductID", prod."ProductName", prod."SupplierID", prod."UnitPrice"
+FROM public."MenuItems" as mi
+INNER JOIN public."MenuDetails" as md on mi."MenuItemID" = md."MenuItemID"
+INNER JOIN public."Products" as prod on md."ProductID" = prod."ProductID"

@@ -1,0 +1,8 @@
+SELECT 
+pd."PurchaseID", ROUND(CAST(pur."Total" as numeric), 2) as PurchaseTotal, pd."UnitQuantity", pd."UnitPrice", pd."UnitTotal", pur."DateOrdered", pur."DateReceived" as DateRecieved, pur."ProcessTime", pd."ProductID", prod."ProductName", prod."UnitQuantity" as qtyperunit, prod."UnitMeasure", prod."UnitPrice" as priceperunit, pd."BranchID", bbr."BranchName", bbr."RegionName" as RegionID, bbr."Subdivision" as RegionName, bbr."RegionID" as Subdivision, pd."SupplierID", sup."CompanyName", sup."Address", sup."City", sup."PostalCode", sup."Country"
+FROM public."PurchaseDetails" as pd
+INNER JOIN public."Purchases" as pur on pd."PurchaseID" = pur."PurchaseID"
+INNER JOIN public."BranchesByRegion" as bbr on pd."BranchID" = CAST(bbr."BranchID" as bigint)
+INNER JOIN public."Suppliers" as sup on pd."SupplierID" = sup."SupplierID"
+INNER JOIN public."Products" as prod on pd."ProductID" = prod."ProductID"
+ORDER BY pd."PurchaseID";

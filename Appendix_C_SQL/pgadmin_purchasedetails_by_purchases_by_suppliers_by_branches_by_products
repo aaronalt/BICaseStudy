@@ -1,0 +1,7 @@
+select *
+from public."PurchaseDetails" as pd
+inner join public."Purchases" as pur on pd."PurchaseID" = pur."PurchaseID"
+inner join public."BranchesByRegion" as bbr on pd."BranchID" = CAST(bbr."BranchID" as bigint)
+inner join public."Suppliers" as sup on pd."SupplierID" = sup."SupplierID"
+inner join public."Products" as prod on pd."ProductID" = prod."ProductID"
+;
